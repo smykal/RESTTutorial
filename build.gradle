@@ -22,6 +22,7 @@ dependencies {
 
 	testCompileOnly 'org.projectlombok:lombok:1.18.22'
 	testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-hateoas', version: '2.6.2'
 }
 
 test {
