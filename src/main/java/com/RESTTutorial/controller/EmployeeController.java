@@ -1,10 +1,15 @@
 package com.RESTTutorial.controller;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
 import com.RESTTutorial.Employee;
 import com.RESTTutorial.EmployeeRepository;
 import com.RESTTutorial.exceptions.EmployeeNotFoundException;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,10 +23,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class EmployeeController {
 
   private final EmployeeRepository repository;
+  private final EmployeeModelAssembler assembler;
 
   @GetMapping("/employees")
-  List<Employee> all() {
-    return repository.findAll();
+  CollectionModel<EntityModel<Employee>> all() {
+    List<EntityModel<Employee>> employees = repository.findAll().stream()
+        .map(employee -> EntityModel.of(employee,
+            linkTo(methodOn(EmployeeController.class).one(employee.getId())).withSelfRel(),
+            linkTo(methodOn(EmployeeController.class).all()).withRel("employees")))
+        .collect(Collectors.toList());
+    return CollectionModel.of(employees,
+        linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
   }
 
   @PostMapping("/employees")
@@ -30,9 +42,10 @@ public class EmployeeController {
   }
 
   @GetMapping("/employees/{id}")
-  Employee one(@PathVariable Long id) {
-    return repository.findById(id)
+  EntityModel<Employee> one(@PathVariable Long id) {
+    Employee employee = repository.findById(id)
         .orElseThrow(() -> new EmployeeNotFoundException(id));
+    return assembler.toModel(employee);
   }
 
   @PutMapping("/employees/{id}")
